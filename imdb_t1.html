@@ -22,7 +22,7 @@ async function init() {
         .attr('cx', function(d){return xs(d.Release_Year);})
         .attr('cy', function(d){return ys(d.Votes);})
         .attr('r', function(d){return 5;})
-        .attr('fill', function(d){return cl(d.Certificate)
+        .attr('fill', function(d){return cl(d.Certificate);})
 
   d3.select('svg')
     .append('g')
