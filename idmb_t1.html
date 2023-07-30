@@ -10,7 +10,7 @@
 async function init() {
   const data = await d3.csv('https://github.com/dsuym/dsuym.github.io/blob/main/IMDb_Top_250_Movies.csv');
   var xs = d3.scaleLinear().domain([1920,2024]).range([0,200])
-  var ys = d3.scaleLinear().domain([30000,300000]).range([200,0])
+  var ys = d3.scaleLog().domain([30000,300000]).range([200,0])
   d3.select('svg')
     .append('g')
       .attr('transform', 'translate(50,50)')
