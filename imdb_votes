@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<script src='https://d3js.org/d3.v7.min.js'></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script> -->
+<style> circle {stroke: black;} </style>
+<style> 
+  div.tooltip {
+      position: absolute;
+      text-align: left;
+      width: auto;
+      height: auto;
+      padding: 2px;
+      font: 16px sans-serif;
+      background: lightblue;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+  }
+</style>
+
+
+<body onload="init()">
+<h1>Which of the IMDB top 250 Movies received more votes?</h1><br/>
+
+
+<p>Hover over a data point to see the details of the movie.
+  <br/>Movies that are more adult oriented are labled by red-ish color.
+  <br/>Movies that are more family-friendly oriented are labled by green-ish color.
+</p>
+
+<label for="select_scene">Factors</label>
+<button id="scene1_btn">Ranking</button>
+<button id="scene2_btn">Year of Release</button>
+<button id="scene3_btn">Duration</button>
+<br/>
+<br/>
+<span></span>
+<br/>
+
+<svg width=2000 height=1200></svg>
+
+<script>
+async function init() {
+  const data = await d3.csv('https://dsuym.github.io/IMDb_Top_250_Movies.csv');
+
+  var tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);   
+   
+  function draw_axis(scene) {
+    let x_title;
+    let y_title;
+
+    y_title = "Number of Votes"
+    if (scene == 1) {
+      x_title = "Ranking"
+      d3.select('svg')
+        .append('g')
+        .attr('transform', 'translate(50,950)')
+        .call(d3.axisBottom(rk))
+    }
+    if (scene == 2) {
+      x_title = "Year of Release"
+      d3.select('svg')
+        .append('g')
+        .attr('transform', 'translate(50,950)')
+        .call(d3.axisBottom(yr))
+    }
+    if (scene == 3) {
+      x_title = "Duration (min)"
+      d3.select('svg')
+        .append('g')
+        .attr('transform', 'translate(50,950)')
+        .call(d3.axisBottom(du))
+    }
+
+    d3.select('svg')
+      .append('g')
+      .attr('transform', 'translate(50,50)')
+      .call(d3.axisLeft(ys).tickValues([30000,100000,300000,1000000,3000000]).tickFormat(d3.format('~s')))
+
+    d3.select("svg").append("text")
+      .attr("text-anchor", "end")
+      .attr("x", 1000)
+      .attr("y", 1000)
+      .style('fill', 'Black')
+      .style('font-weight', 'bold')
+      .text(x_title)
+
+    d3.select("svg").append("text")
+      .attr("text-anchor", "end")
+      .attr("x", -400)
+      .attr("y", 10)
+      .attr("dy", ".25em")
+      .style('fill', 'Black')
+      .style('font-weight', 'bold')
+      .attr("transform", "rotate(-90)")
+      .text(y_title);
+  }
+    
+
+  var rt = d3.scaleBand().domain(["U","A","AA","12","PG","12A","15","R","18","X"]).range([1,0])
+  var cl = d3.scaleLinear().domain([0,0.5,1]).range(["red","white","green"])
+  var rk = d3.scaleLinear().domain([0,250]).range([0,1900])
+  var yr = d3.scaleLinear().domain([1920,2024]).range([0,1900])
+  var du = d3.scaleLinear().domain([40,250]).range([0,1900])
+  var ys = d3.scaleLog().domain([30000,3000000]).range([900,0])  
+
+  function update_scene(scene) {
+    if (scene == 1){
+      d3.select("span").html("The movies with higher ranks are voted by more people")
+    }
+    if (scene == 2){
+      d3.select("span").html("The movies released in later years are voted by more people")
+    }    
+    if (scene == 3){
+      d3.select("span").html("Except some outliers, the duration of a movie does not affect the number of voting people much")
+    } 
+    d3.select("svg").html("");    
+    
+    var svg = d3.select("svg")
+      .append("g")
+      .attr("transform","translate(50,50)")                         
+    
+    if (scene == 1){
+      svg.selectAll('circle')
+        .data(data)
+        .enter()
+        .append('circle')
+          .attr('cx', function(d){return rk(d.Sl_No);})
+          .attr('cy', function(d){return ys(d.Votes);})
+          .attr('r', function(d){return 5;})
+          .style('fill', function(d){return cl(rt(d.Certificate))})
+          .on("mouseover", function(index, data) {        
+            d3.select(this).transition()
+              .duration('50')
+              .attr('opacity', '.5');
+                  
+            tooltip.transition()
+              .duration(200)
+              .style("opacity", 0.9);
+
+            tooltip.html(
+              "Ranking " + data.Sl_No 
+              + ": " + data.Rating + "/10"
+              + "<br/>" + data.Name
+              + "<br/> Released in " + data.Release_Year
+              + "&nbsp;&nbsp;&nbsp; Directed by " + data.Director
+              + "<br/> Duration: " + data.Duration + "min"
+              + "&nbsp;&nbsp;&nbsp; Certificate: " + data.Certificate
+              + "<br/> Description: " + data.Description
+              )
+              .style("left", (event.pageX) + "px")
+              .style("top", (event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {        
+            d3.select(this).transition()
+              .duration('50')
+              .attr('opacity', '1');
+
+            tooltip.transition()
+              .duration(200)
+              .style("opacity", 0);
+          });
+    }
+
+    if (scene == 2){
+      svg.selectAll('circle')
+        .data(data)
+        .enter()
+        .append('circle')
+          .attr('cx', function(d){return yr(d.Release_Year);})
+          .attr('cy', function(d){return ys(d.Votes);})
+          .attr('r', function(d){return 5;})
+          .style('fill', function(d){return cl(rt(d.Certificate))})
+          .on("mouseover", function(index, data) {        
+            d3.select(this).transition()
+              .duration('50')
+              .attr('opacity', '.5');
+                  
+            tooltip.transition()
+              .duration(200)
+              .style("opacity", 0.9);
+
+            tooltip.html(
+              "Ranking " + data.Sl_No 
+              + ": " + data.Rating + "/10"
+              + "<br/>" + data.Name
+              + "<br/> Released in " + data.Release_Year
+              + "&nbsp;&nbsp;&nbsp; Directed by " + data.Director
+              + "<br/> Duration: " + data.Duration + "min"
+              + "&nbsp;&nbsp;&nbsp; Certificate: " + data.Certificate
+              + "<br/> Description: " + data.Description
+              )
+              .style("left", (event.pageX) + "px")
+              .style("top", (event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {        
+            d3.select(this).transition()
+              .duration('50')
+              .attr('opacity', '1');
+
+            tooltip.transition()
+              .duration(200)
+              .style("opacity", 0);
+          });
+    }
+    if (scene == 3){
+      svg.selectAll('circle')
+        .data(data)
+        .enter()
+        .append('circle')
+          .attr('cx', function(d){return du(d.Duration);})
+          .attr('cy', function(d){return ys(d.Votes);})
+          .attr('r', function(d){return 5;})
+          .style('fill', function(d){return cl(rt(d.Certificate))})
+          .on("mouseover", function(index, data) {        
+            d3.select(this).transition()
+              .duration('50')
+              .attr('opacity', '.5');
+                  
+            tooltip.transition()
+              .duration(200)
+              .style("opacity", 0.9);
+
+            tooltip.html(
+              "Ranking " + data.Sl_No 
+              + ": " + data.Rating + "/10"
+              + "<br/>" + data.Name
+              + "<br/> Released in " + data.Release_Year
+              + "&nbsp;&nbsp;&nbsp; Directed by " + data.Director
+              + "<br/> Duration: " + data.Duration + "min"
+              + "&nbsp;&nbsp;&nbsp; Certificate: " + data.Certificate
+              + "<br/> Description: " + data.Description
+              )
+              .style("left", (event.pageX) + "px")
+              .style("top", (event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {        
+            d3.select(this).transition()
+              .duration('50')
+              .attr('opacity', '1');
+
+            tooltip.transition()
+              .duration(200)
+              .style("opacity", 0);
+          });
+    }
+    draw_axis(scene);
+  }
+
+  update_scene(1);
+
+  var btn1 = d3.select("#scene1_btn");
+  btn1.on("click", function() {  
+      update_scene(1);
+  });
+
+  var btn2 = d3.select("#scene2_btn");
+  btn2.on("click", function() {
+      update_scene(2);
+  });
+
+  var btn3 = d3.select("#scene3_btn");
+  btn3.on("click", function() {
+      update_scene(3);
+  });
+}
+</script>
+</body>
+</html>
