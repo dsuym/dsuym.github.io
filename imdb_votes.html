@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <script src='https://d3js.org/d3.v7.min.js'></script>
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
 <style> circle {stroke: black;} </style>
 <style> 
   div.tooltip {
@@ -22,20 +22,19 @@
 <body onload="init()">
 <h1>Which of the IMDB top 250 movies received more votes?</h1><br/>
 
+<h2>Hover over a data point to see the details of the movie.</h2>
 
-<p>Hover over a data point to see the details of the movie.
-  <br/>Movies that are more adult oriented are labled by red-ish color.
-  <br/>Movies that are more family-friendly oriented are labled by green-ish color.
-</p>
-
-<label for="select_scene">Factors</label>
+<label for="select_scene">Factors </label>
 <button id="scene1_btn">Ranking</button>
 <button id="scene2_btn">Year of Release</button>
-<button id="scene3_btn">Duration</button>
-<br/>
-<br/>
+<button id="scene3_btn">Duration</button> 
+
 <span></span>
 <br/>
+<p>
+  Movies that are more adult oriented are labled by red-ish color. Movies that are more family-friendly oriented are labled by green-ish color.
+  <br/> In general, adult oriented movies are voted by more people.
+</p>
 
 <svg width=2000 height=1200></svg>
 
@@ -47,6 +46,31 @@ async function init() {
     .attr("class", "tooltip")
     .style("opacity", 0);   
    
+
+  function draw_annotations(scene) {
+
+    var summary =  ["The movies with higher ranks are voted by more people","The movies released in later years are voted by more people","Except some outliers, the duration of a movie does not affect the number of voting people much"]
+    var annotations = [
+    {  
+      type: d3.annotationLabel,
+      note: {
+          label: summary[scene-1],
+          wrap: 400              
+      },          
+      x: 300,
+      y: 40
+    }]  
+    const makeAnnotations = d3.annotation()
+      .disable(["connector"])
+      .type(d3.annotationLabel)
+      .annotations(annotations)
+
+    d3.select("svg")
+      .append("g")
+      .attr("class", "annotation-group")
+      .call(makeAnnotations)
+  }
+
   function draw_axis(scene) {
     let x_title;
     let y_title;
@@ -108,13 +132,13 @@ async function init() {
 
   function update_scene(scene) {
     if (scene == 1){
-      d3.select("span").html("The movies with higher ranks are voted by more people")
+      d3.select("span").html("Ranking is selected")
     }
     if (scene == 2){
-      d3.select("span").html("The movies released in later years are voted by more people")
+      d3.select("span").html("Year of Release is selected")
     }    
     if (scene == 3){
-      d3.select("span").html("Except some outliers, the duration of a movie does not affect the number of voting people much")
+      d3.select("span").html("Duration is selected")
     } 
     d3.select("svg").html("");    
     
@@ -143,6 +167,7 @@ async function init() {
             tooltip.html(
               "Ranking " + data.Sl_No 
               + ": " + data.Rating + "/10"
+              + " by " + data.Votes + " votes"
               + "<br/>" + data.Name
               + "<br/> Released in " + data.Release_Year
               + "&nbsp;&nbsp;&nbsp; Directed by " + data.Director
@@ -247,10 +272,11 @@ async function init() {
           });
     }
     draw_axis(scene);
+    draw_annotations(scene);
   }
 
   update_scene(1);
-
+  
   var btn1 = d3.select("#scene1_btn");
   btn1.on("click", function() {  
       update_scene(1);
